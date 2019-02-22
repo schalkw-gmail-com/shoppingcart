@@ -1,5 +1,6 @@
 <?php
 
+    /* debug function to allow for easy viewing of any variable. It is not placed in the class as to make it accessibe everywhere */
     function debug($value){
         echo "<pre>";
         print_r($value);
@@ -10,8 +11,10 @@
 
     class shoppingCart
     {
-        public $productList;
-        public $shoppingCartList;
+        public $productList; // default list of products + the added products for this session */
+        public $shoppingCartList; // list of items currenty in the shopping cart */
+
+        /* default list of products as provided */
         public $products = [
             [ "name" => "Sledgehammer", "price" => 125.75 ],
             [ "name" => "Axe", "price" => 190.50 ],
@@ -20,11 +23,13 @@
             [ "name" => "Hacksaw", "price" => 18.45 ],
         ];
         public $sessionId;
-        public $productCount;
+        public $productCount; //counter to provide count the number of available products in the list
 
         public function __construct($sessionId){
             $this->sessionId = $sessionId;
 
+            //ensure that the shopping carts starts with the default list of products on startip
+            //this is only done once per session
             if(!isset($this->productList[$this->sessionId])){
                 $this->productList[$this->sessionId] = $this->products;
             }
@@ -68,13 +73,15 @@ HTML;
         }
 
         public function addProductToList($product,$price){
+            //count the number of items in the product list
             $this->productCounter();
-            if(($product != '') && ($price != '')){
+            if(($product != '') && ($price != '')){//ensure that both the name and price has a value before adding it to the list. this is to ensure that you do not add blank values.
                 $this->productList[$this->sessionId][$this->productCount]['name'] = $product;
                 $this->productList[$this->sessionId][$this->productCount]['price'] = $price;
             }
         }
 
+        // this function display the shopping cart.
         public function shoppingCart(){
             $shoppingCartList = <<<HTML
                 <table>                              
@@ -88,16 +95,22 @@ HTML;
                   </tr>
 HTML;
 
+            //check if there is a shopping cart for this session
             if(isset($this->shoppingCartList[$this->sessionId]) ) {
 
                 $totalCost = 0;
 
+                // loop through the list of products in the shopping cart
                 foreach($this->shoppingCartList[$this->sessionId] as $product => $detail){
+                    // gather all the data for the product
                     $data = $this->findProductData($product);
+                    // get the total qty for this product
                     $qty = $this->totalProductInCart($product);
 
+                    // calculate the total cost for the this product
+                    // while we are busy with the calculation apply the numbering format
                     $cost = number_format(($qty * $data['price']),2,'.','');
-                    $totalCost += $cost;
+                    $totalCost += $cost; //increase the total cost of the cart
 
                     $shoppingCartList .= <<<HTML
                       <tr>
@@ -109,6 +122,7 @@ HTML;
                       </tr>
 HTML;
                 }
+                // ensure that the total cost is display in the correct format
                 $totalCost = number_format($totalCost, 2, '.','');
                 $shoppingCartList .= <<<HTML
                       <tr>
@@ -121,6 +135,7 @@ HTML;
 HTML;
 
             }else{
+                // if nothing is in the shopping cart display a message to that effect
                 $shoppingCartList .= <<<HTML
                       <tr>
                         <td colspan="6">Nothing has been added to your cart yet.</td>
@@ -139,16 +154,22 @@ HTML;
             echo $elements;
         }
 
+        // add an item to the shopping cart.
         public function addToCart($product){
+            //ensure that we have a shopping cart for this session
             if(!isset($this->shoppingCartList[$this->sessionId])){
                 $this->shoppingCartList[$this->sessionId] = array();
             }
+            //make sure the product has been added to the shopping cart for this session
             if(!isset($this->shoppingCartList[$this->sessionId][$product])){
                 $this->shoppingCartList[$this->sessionId][$product] = 0;
             }
+            //increase the qty for the specific selection
             $this->shoppingCartList[$this->sessionId][$product] += 1;
         }
 
+        // remove a specific item from the cart. Star by decreasing the qty by 1 and if the qty reaches 0 remove the product from the lit
+        // thereby not showing it in the shopping as an item with 0 qty
         public function removeFromCart($product){
             $this->shoppingCartList[$this->sessionId][$product] -= 1;
             if($this->shoppingCartList[$this->sessionId][$product] < 1){
@@ -156,11 +177,14 @@ HTML;
             }
         }
 
+        //search through the product list array for the data (name and price) of the selected product and return the key
         public function findProductData($product){
+            //array_column return the values of a given array where the key matches the key you are searching for
             $key = array_search($product, array_column($this->productList[$this->sessionId], 'name'));
             return $this->productList[$this->sessionId][$key];
         }
 
+        //count all the products in the shopping cart
         public function totalProductInCart($product){
             $total =0;
             if($product == ''){
@@ -172,6 +196,7 @@ HTML;
             return $total;
         }
 
+        // clear everything out of the shopping cart
         public function clearCart(){
             unset($this->shoppingCartList[$this->sessionId]);
         }
